@@ -1,0 +1,90 @@
+# MT RECONOCEDORA
+#
+#   L = { a^i b^j c^k  |  i >= 1, j >= 1, k = i * j }
+#
+# La máquina verifica una multiplicación: acepta si la cantidad de c's es
+# exactamente el producto de la cantidad de a's por la cantidad de b's.
+# L no es libre de contexto (no lo reconoce ningún autómata de pila), así que
+# realmente necesita la cinta de una Máquina de Turing.
+#
+# Idea del algoritmo (dos ciclos anidados, como un "for" dentro de otro):
+#   Fase 1  (q0-q3)  Valida que la cadena tenga la forma a+ b+ c+.
+#           (q4)     Regresa la cabeza al inicio.
+#   Fase 2  (q5-q6)  Ciclo externo: marca la siguiente a con X.
+#   Fase 3  (q7-q9)  Ciclo interno: por cada b (marcada con Y) tacha una c con Z.
+#                    Si se acaban las c's antes de tiempo → rechaza (k < i·j).
+#   Fase 4  (q10-q11) Restaura las Y a b para la siguiente a y vuelve a q5.
+#   Fase 5  (q12)    Cuando ya no hay a's, revisa que no sobre ninguna c.
+#                    Si sobra alguna → rechaza (k > i·j); si no → acepta.
+#
+# Complejidad: O(n²) pasos, n = |w|.
+# Esta MT no usa la caché: siempre lee y escribe B en esa posición.
+# Formato de cada transición:  read: [símbolo leído, caché]   write: [caché nueva, símbolo escrito]
+
+mt:
+  name: "MT reconocedora: a^i b^j c^k con k = i·j"
+  description: |
+    Acepta las cadenas a^i b^j c^k (i, j >= 1) en las que k = i·j.
+    Ejemplos: abbcc (1·2 = 2), aabbcccc (2·2 = 4), aaabbcccccc (3·2 = 6).
+  states: [q0, q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12, qf]
+  input_alphabet: [a, b, c]
+  tape_alphabet: [a, b, c, X, Y, Z, B]
+  initial_state: q0
+  accept_states: [qf]
+  transitions:
+    # ---- Fase 1: validar la forma a+ b+ c+ -----------------------------------
+    - { state: q0, read: [a, B], write: [B, a], move: R, next: q1 }
+    - { state: q1, read: [a, B], write: [B, a], move: R, next: q1 }
+    - { state: q1, read: [b, B], write: [B, b], move: R, next: q2 }
+    - { state: q2, read: [b, B], write: [B, b], move: R, next: q2 }
+    - { state: q2, read: [c, B], write: [B, c], move: R, next: q3 }
+    - { state: q3, read: [c, B], write: [B, c], move: R, next: q3 }
+    - { state: q3, read: [B, B], write: [B, B], move: L, next: q4 }
+    # Regresar al inicio de la cinta
+    - { state: q4, read: [a, B], write: [B, a], move: L, next: q4 }
+    - { state: q4, read: [b, B], write: [B, b], move: L, next: q4 }
+    - { state: q4, read: [c, B], write: [B, c], move: L, next: q4 }
+    - { state: q4, read: [B, B], write: [B, B], move: R, next: q5 }
+
+    # ---- Fase 2: ciclo externo, tomar la siguiente a -------------------------
+    - { state: q5, read: [X, B], write: [B, X], move: R, next: q5 }
+    - { state: q5, read: [a, B], write: [B, X], move: R, next: q6 }
+    - { state: q5, read: [b, B], write: [B, b], move: R, next: q12 } # ya no hay a's
+    # Avanzar hasta la primera b y marcarla
+    - { state: q6, read: [a, B], write: [B, a], move: R, next: q6 }
+    - { state: q6, read: [b, B], write: [B, Y], move: R, next: q7 }
+
+    # ---- Fase 3: ciclo interno, por cada b tachar una c ----------------------
+    - { state: q7, read: [b, B], write: [B, b], move: R, next: q7 }
+    - { state: q7, read: [Z, B], write: [B, Z], move: R, next: q7 }
+    - { state: q7, read: [c, B], write: [B, Z], move: L, next: q8 }
+    # Regresar a la última b marcada (Y)
+    - { state: q8, read: [Z, B], write: [B, Z], move: L, next: q8 }
+    - { state: q8, read: [b, B], write: [B, b], move: L, next: q8 }
+    - { state: q8, read: [Y, B], write: [B, Y], move: R, next: q9 }
+    # ¿Queda otra b sin marcar?
+    - { state: q9, read: [b, B], write: [B, Y], move: R, next: q7 }
+    - { state: q9, read: [Z, B], write: [B, Z], move: L, next: q10 }
+    - { state: q9, read: [c, B], write: [B, c], move: L, next: q10 }
+
+    # ---- Fase 4: restaurar las b's y volver a la siguiente a -----------------
+    - { state: q10, read: [Y, B], write: [B, b], move: L, next: q10 }
+    - { state: q10, read: [X, B], write: [B, X], move: R, next: q5 }
+    - { state: q10, read: [a, B], write: [B, a], move: L, next: q11 }
+    - { state: q11, read: [a, B], write: [B, a], move: L, next: q11 }
+    - { state: q11, read: [X, B], write: [B, X], move: R, next: q5 }
+
+    # ---- Fase 5: verificar que no sobre ninguna c ----------------------------
+    - { state: q12, read: [b, B], write: [B, b], move: R, next: q12 }
+    - { state: q12, read: [Z, B], write: [B, Z], move: R, next: q12 }
+    - { state: q12, read: [B, B], write: [B, B], move: S, next: qf }
+
+  inputs:
+    # Aceptadas (longitud >= 5)
+    - "abbcc"          # 1·2 = 2
+    - "aabbcccc"       # 2·2 = 4
+    - "aaabbcccccc"    # 3·2 = 6
+    # Rechazadas (longitud >= 5)
+    - "aabbccc"        # 2·2 = 4 pero hay 3 c's  (faltan c's)
+    - "abbccc"         # 1·2 = 2 pero hay 3 c's  (sobran c's)
+    - "aabcbcc"        # no tiene la forma a+ b+ c+
