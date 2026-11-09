@@ -19,6 +19,7 @@ OPCIONES:
                            (se puede repetir; use \"\" para la cadena vacía)
     -m, --max-steps <n>    Límite de pasos por cadena (por defecto 10000)
     -q, --quiet            No muestra las IDs, solo el resultado de cada cadena
+    -v, --visual           Dibuja la cinta y la cabeza debajo de cada ID
     -d, --diagrama <ruta>  Exporta el diagrama de estados: .dot (Graphviz)
                            o .md/.mmd (Mermaid)
         --no-color         Desactiva los colores
@@ -34,6 +35,7 @@ struct Options {
     inputs: Vec<String>,
     max_steps: usize,
     quiet: bool,
+    visual: bool,
     color: bool,
     diagram: Option<PathBuf>,
 }
@@ -43,6 +45,7 @@ fn parse_args(args: &[String]) -> Result<Options, String> {
     let mut inputs = Vec::new();
     let mut max_steps = DEFAULT_MAX_STEPS;
     let mut quiet = false;
+    let mut visual = false;
     let mut diagram = None;
     let mut color = std::env::var_os("NO_COLOR").is_none();
 
@@ -62,6 +65,7 @@ fn parse_args(args: &[String]) -> Result<Options, String> {
                     .map_err(|_| format!("`{v}` no es un número de pasos válido"))?;
             }
             "-q" | "--quiet" => quiet = true,
+            "-v" | "--visual" => visual = true,
             "-d" | "--diagrama" => diagram = Some(PathBuf::from(value(arg)?)),
             "--no-color" => color = false,
             "-h" | "--help" => return Err(String::new()),
@@ -81,6 +85,7 @@ fn parse_args(args: &[String]) -> Result<Options, String> {
         inputs,
         max_steps,
         quiet,
+        visual,
         color,
         diagram,
     })
@@ -152,8 +157,12 @@ fn main() -> ExitCode {
         let result = simulator::run(&machine, input, opts.max_steps);
         println!("{}", display::input_header(&result, &style));
         if !opts.quiet {
+            let width = display::ids_width(&result.ids);
             for id in &result.ids {
-                println!("{}", display::id_line(&machine, id, &style));
+                println!("{}", display::id_line(&machine, id, width, &style));
+                if opts.visual {
+                    println!("{}", display::tape_drawing(id, &style));
+                }
             }
         }
         println!("{}", display::verdict(&machine, &result, &style));

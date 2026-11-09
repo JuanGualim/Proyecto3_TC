@@ -103,8 +103,22 @@ pub fn input_header(result: &SimulationResult, style: &Style) -> String {
     style.bold(&rule(&format!("Entrada: {shown}")))
 }
 
+/// Ancho (en caracteres) de la ID más larga, para alinear la columna de transiciones.
+pub fn ids_width(ids: &[InstantaneousDescription]) -> usize {
+    ids.iter()
+        .map(|id| id.to_string().chars().count())
+        .max()
+        .unwrap_or(0)
+}
+
 /// Una línea con la ID, en notación α[q, c]β, y la transición que la produjo.
-pub fn id_line(m: &TuringMachine, id: &InstantaneousDescription, style: &Style) -> String {
+/// `width` rellena la ID con espacios para que las transiciones queden alineadas.
+pub fn id_line(
+    m: &TuringMachine,
+    id: &InstantaneousDescription,
+    width: usize,
+    style: &Style,
+) -> String {
     let mut beta = vec![id.tape.head.clone()];
     beta.extend(id.tape.right.iter().cloned());
     let control = format!("[{}, {}]", id.state, id.cache);
@@ -114,16 +128,60 @@ pub fn id_line(m: &TuringMachine, id: &InstantaneousDescription, style: &Style) 
         style.cyan(&control)
     };
     let arrow = if id.step == 0 { " " } else { "⊢" };
+    let padding = " ".repeat(width.saturating_sub(id.to_string().chars().count()));
     let via = match id.applied {
-        Some(i) => style.dim(&format!("   (δ #{})", i + 1)),
-        None => style.dim("   (ID inicial)"),
+        Some(i) => style.dim(&format!("   δ #{}: {}", i + 1, m.transitions[i])),
+        None => style.dim("   ID inicial"),
     };
     format!(
-        "  {} {arrow} {}{}{}{via}",
+        "  {} {arrow} {}{}{}{padding}{via}",
         style.dim(&format!("{:>5}", id.step)),
         join_symbols(&id.tape.left),
         control,
         join_symbols(&beta),
+    )
+}
+
+/// Dibujo de la cinta con la cabeza señalada debajo de la celda que lee:
+///
+/// ```text
+///   ┌───┬───┬───┐
+///   │ X │ a │ b │
+///   └───┴───┴───┘
+///         ▲ [q1, a]
+/// ```
+pub fn tape_drawing(id: &InstantaneousDescription, style: &Style) -> String {
+    let mut cells: Vec<&String> = id.tape.left.iter().collect();
+    let head = cells.len();
+    cells.push(&id.tape.head);
+    cells.extend(id.tape.right.iter());
+
+    let widths: Vec<usize> = cells.iter().map(|c| c.chars().count() + 2).collect();
+    let border = |l: &str, mid: &str, r: &str| {
+        let parts: Vec<String> = widths.iter().map(|w| "─".repeat(*w)).collect();
+        format!("{l}{}{r}", parts.join(mid))
+    };
+    let symbols: Vec<String> = cells
+        .iter()
+        .enumerate()
+        .map(|(i, c)| {
+            if i == head {
+                format!(" {} ", style.yellow(c))
+            } else {
+                format!(" {c} ")
+            }
+        })
+        .collect();
+    let offset: usize = widths[..head].iter().map(|w| w + 1).sum::<usize>() + 1 + widths[head] / 2;
+
+    let indent = "          ";
+    format!(
+        "{indent}{}\n{indent}│{}│\n{indent}{}\n{indent}{}▲ {}\n",
+        border("┌", "┬", "┐"),
+        symbols.join("│"),
+        border("└", "┴", "┘"),
+        " ".repeat(offset),
+        style.cyan(&format!("[{}, {}]", id.state, id.cache)),
     )
 }
 
