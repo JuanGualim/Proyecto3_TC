@@ -3,6 +3,7 @@
 use std::path::PathBuf;
 use std::process::ExitCode;
 use turing_sim::config;
+use turing_sim::diagram;
 use turing_sim::display::{self, Style};
 use turing_sim::machine::TuringMachine;
 use turing_sim::simulator::{self, DEFAULT_MAX_STEPS, SimulationResult};
@@ -18,6 +19,8 @@ OPCIONES:
                            (se puede repetir; use \"\" para la cadena vacía)
     -m, --max-steps <n>    Límite de pasos por cadena (por defecto 10000)
     -q, --quiet            No muestra las IDs, solo el resultado de cada cadena
+    -d, --diagrama <ruta>  Exporta el diagrama de estados: .dot (Graphviz)
+                           o .md/.mmd (Mermaid)
         --no-color         Desactiva los colores
     -h, --help             Muestra esta ayuda
 
@@ -32,6 +35,7 @@ struct Options {
     max_steps: usize,
     quiet: bool,
     color: bool,
+    diagram: Option<PathBuf>,
 }
 
 fn parse_args(args: &[String]) -> Result<Options, String> {
@@ -39,6 +43,7 @@ fn parse_args(args: &[String]) -> Result<Options, String> {
     let mut inputs = Vec::new();
     let mut max_steps = DEFAULT_MAX_STEPS;
     let mut quiet = false;
+    let mut diagram = None;
     let mut color = std::env::var_os("NO_COLOR").is_none();
 
     let mut it = args.iter();
@@ -57,6 +62,7 @@ fn parse_args(args: &[String]) -> Result<Options, String> {
                     .map_err(|_| format!("`{v}` no es un número de pasos válido"))?;
             }
             "-q" | "--quiet" => quiet = true,
+            "-d" | "--diagrama" => diagram = Some(PathBuf::from(value(arg)?)),
             "--no-color" => color = false,
             "-h" | "--help" => return Err(String::new()),
             other if other.starts_with('-') && other.len() > 1 => {
@@ -76,6 +82,7 @@ fn parse_args(args: &[String]) -> Result<Options, String> {
         max_steps,
         quiet,
         color,
+        diagram,
     })
 }
 
@@ -107,6 +114,27 @@ fn main() -> ExitCode {
     };
 
     println!("{}", display::machine_definition(&machine, &style));
+
+    if let Some(path) = &opts.diagram {
+        let is_mermaid = matches!(
+            path.extension().and_then(|e| e.to_str()),
+            Some("md" | "mmd")
+        );
+        let text = if is_mermaid {
+            diagram::to_mermaid(&machine)
+        } else {
+            diagram::to_dot(&machine)
+        };
+        if let Err(e) = std::fs::write(path, text) {
+            eprintln!(
+                "{} no se pudo escribir {}: {e}",
+                style.red("error:"),
+                path.display()
+            );
+            return ExitCode::FAILURE;
+        }
+        println!("Diagrama de estados guardado en {}\n", path.display());
+    }
 
     let inputs = if opts.inputs.is_empty() {
         machine.inputs.clone()
