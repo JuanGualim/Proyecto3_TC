@@ -1,0 +1,25 @@
+name: Pruebas
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - name: Formato
+        run: cargo fmt --check
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+      - name: Pruebas
+        run: cargo test --release
+      - name: Simular las máquinas del proyecto
+        run: |
+          for f in maquinas/*.yaml maquinas/extra/*.yaml; do
+            cargo run --release --quiet -- "$f" --quiet --no-color
+          done
