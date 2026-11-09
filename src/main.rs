@@ -1,5 +1,6 @@
 //! Punto de entrada: lee los argumentos, carga la MT y simula cada cadena.
 
+use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
 use std::process::ExitCode;
 use turing_sim::config;
@@ -20,6 +21,8 @@ OPCIONES:
     -m, --max-steps <n>    Límite de pasos por cadena (por defecto 10000)
     -q, --quiet            No muestra las IDs, solo el resultado de cada cadena
     -v, --visual           Dibuja la cinta y la cabeza debajo de cada ID
+    -p, --paso-a-paso      Pausa después de cada ID (ENTER = siguiente paso,
+                           c + ENTER = continuar sin pausas)
     -d, --diagrama <ruta>  Exporta el diagrama de estados: .dot (Graphviz)
                            o .md/.mmd (Mermaid)
         --no-color         Desactiva los colores
@@ -36,6 +39,7 @@ struct Options {
     max_steps: usize,
     quiet: bool,
     visual: bool,
+    step_by_step: bool,
     color: bool,
     diagram: Option<PathBuf>,
 }
@@ -46,6 +50,7 @@ fn parse_args(args: &[String]) -> Result<Options, String> {
     let mut max_steps = DEFAULT_MAX_STEPS;
     let mut quiet = false;
     let mut visual = false;
+    let mut step_by_step = false;
     let mut diagram = None;
     let mut color = std::env::var_os("NO_COLOR").is_none();
 
@@ -66,6 +71,7 @@ fn parse_args(args: &[String]) -> Result<Options, String> {
             }
             "-q" | "--quiet" => quiet = true,
             "-v" | "--visual" => visual = true,
+            "-p" | "--paso-a-paso" => step_by_step = true,
             "-d" | "--diagrama" => diagram = Some(PathBuf::from(value(arg)?)),
             "--no-color" => color = false,
             "-h" | "--help" => return Err(String::new()),
@@ -86,9 +92,22 @@ fn parse_args(args: &[String]) -> Result<Options, String> {
         max_steps,
         quiet,
         visual,
+        step_by_step,
         color,
         diagram,
     })
+}
+
+/// Espera a que el usuario presione ENTER. Devuelve `false` si escribió `c`
+/// (continuar sin pausas) o si ya no hay entrada estándar.
+fn wait_for_enter() -> bool {
+    print!("      [ENTER] siguiente paso · [c] continuar ");
+    let _ = io::stdout().flush();
+    let mut line = String::new();
+    match io::stdin().lock().read_line(&mut line) {
+        Ok(0) | Err(_) => false,
+        Ok(_) => !line.trim().eq_ignore_ascii_case("c"),
+    }
 }
 
 fn main() -> ExitCode {
@@ -158,10 +177,14 @@ fn main() -> ExitCode {
         println!("{}", display::input_header(&result, &style));
         if !opts.quiet {
             let width = display::ids_width(&result.ids);
-            for id in &result.ids {
+            let mut pause = opts.step_by_step;
+            for (i, id) in result.ids.iter().enumerate() {
                 println!("{}", display::id_line(&machine, id, width, &style));
                 if opts.visual {
                     println!("{}", display::tape_drawing(id, &style));
+                }
+                if pause && i + 1 < result.ids.len() {
+                    pause = wait_for_enter();
                 }
             }
         }
