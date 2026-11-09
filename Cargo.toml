@@ -1,0 +1,10 @@
+[package]
+name = "turing_sim"
+version = "0.1.0"
+edition = "2024"
+description = "Simulador de Máquinas de Turing de una cinta definidas en YAML"
+authors = ["Juan Gualim", "Denil Parada", "Harry Méndez"]
+
+[dependencies]
+serde = { version = "1.0.229", features = ["derive"] }
+serde_yaml = "0.9.34"
