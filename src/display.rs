@@ -270,7 +270,7 @@ pub fn summary(results: &[SimulationResult], style: &Style) -> String {
     let mut out = style.bold(&rule("Resumen"));
     out += "\n";
     out += &format!(
-        "  {:<w_in$}  {:<11}  {:>6}  {:<w_out$}\n",
+        "  {:<w_in$}  {:<11}  {:>6}  {}\n",
         "Entrada", "Resultado", "Pasos", "Cinta final"
     );
     out += &format!(
@@ -282,13 +282,14 @@ pub fn summary(results: &[SimulationResult], style: &Style) -> String {
     );
     for ((r, input), tape) in results.iter().zip(&shown).zip(&finals) {
         // Se rellena antes de colorear para que los códigos ANSI no rompan la alineación.
+        // La última columna no se rellena para no dejar espacios al final de la línea.
         let label = if r.accepted() {
             style.green(&format!("{:<11}", "ACEPTADA"))
         } else {
             style.red(&format!("{:<11}", "RECHAZADA"))
         };
         out += &format!(
-            "  {:<w_in$}  {label}  {:>6}  {:<w_out$}\n",
+            "  {:<w_in$}  {label}  {:>6}  {}\n",
             input,
             r.steps(),
             tape
