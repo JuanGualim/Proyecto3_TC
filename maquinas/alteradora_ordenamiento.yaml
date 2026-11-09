@@ -1,0 +1,117 @@
+# MT ALTERADORA
+#
+#   Ordena alfabéticamente una cadena sobre {a, b, c, d} usando BUBBLE SORT
+#   directamente sobre la cinta.
+#
+#   Ejemplos:  dcbaa  →  aabcd       badcab  →  aabbcd
+#
+# La máquina aprovecha la CACHÉ del control finito ([estado, caché], como en el
+# laboratorio 10) para recordar el símbolo anterior mientras recorre la cinta.
+# Así puede comparar dos celdas vecinas sin necesitar un estado por cada símbolo.
+#
+# Algoritmo:
+#   q0  Inicio de una pasada: guarda el primer símbolo en la caché.
+#   q1  Recorre la cinta a la derecha comparando cada símbolo x con el anterior y
+#       (que está en la caché). Mientras y <= x todo está en orden.
+#       Si x < y (par desordenado) escribe y sobre x, guarda x en la caché y
+#       retrocede una celda (q3).
+#   q3  Escribe x en la celda anterior: el intercambio quedó hecho. Pasa a q2.
+#   q2  Igual que q1 pero "sabe" que en esta pasada ya hubo un intercambio.
+#   q4  Al terminar una pasada con intercambios regresa al inicio y repite (q0).
+#   q5  Si una pasada completa no hizo intercambios (terminó en q1) la cadena
+#       ya está ordenada: regresa la cabeza al inicio y acepta (qf).
+#
+# Complejidad: O(n²) pasos (hasta n pasadas de ida y vuelta).
+# Formato de cada transición:  read: [símbolo leído, caché]   write: [caché nueva, símbolo escrito]
+
+mt:
+  name: "MT alteradora: ordenamiento burbuja de cadenas sobre {a, b, c, d}"
+  description: |
+    Reordena los símbolos de la cadena en orden alfabético (a < b < c < d)
+    con el algoritmo de la burbuja. Acepta siempre que la entrada pertenezca a
+    {a, b, c, d}* y deja en la cinta la cadena ordenada.
+  states: [q0, q1, q2, q3, q4, q5, qf]
+  input_alphabet: [a, b, c, d]
+  tape_alphabet: [a, b, c, d, B]
+  initial_state: q0
+  accept_states: [qf]
+  transitions:
+    # ---- q0: inicio de una pasada (guarda el primer símbolo en la caché) ----
+    - { state: q0, read: [a, B], write: [a, a], move: R, next: q1 }
+    - { state: q0, read: [b, B], write: [b, b], move: R, next: q1 }
+    - { state: q0, read: [c, B], write: [c, c], move: R, next: q1 }
+    - { state: q0, read: [d, B], write: [d, d], move: R, next: q1 }
+    - { state: q0, read: [B, B], write: [B, B], move: S, next: qf } # cadena vacía: ya está ordenada
+
+    # ---- q1: pasada SIN intercambios todavía. Caché = símbolo anterior ----
+    - { state: q1, read: [a, a], write: [a, a], move: R, next: q1 }
+    - { state: q1, read: [b, a], write: [b, b], move: R, next: q1 }
+    - { state: q1, read: [c, a], write: [c, c], move: R, next: q1 }
+    - { state: q1, read: [d, a], write: [d, d], move: R, next: q1 }
+    - { state: q1, read: [a, b], write: [a, b], move: L, next: q3 } # a < b: intercambiar
+    - { state: q1, read: [b, b], write: [b, b], move: R, next: q1 }
+    - { state: q1, read: [c, b], write: [c, c], move: R, next: q1 }
+    - { state: q1, read: [d, b], write: [d, d], move: R, next: q1 }
+    - { state: q1, read: [a, c], write: [a, c], move: L, next: q3 } # a < c: intercambiar
+    - { state: q1, read: [b, c], write: [b, c], move: L, next: q3 } # b < c: intercambiar
+    - { state: q1, read: [c, c], write: [c, c], move: R, next: q1 }
+    - { state: q1, read: [d, c], write: [d, d], move: R, next: q1 }
+    - { state: q1, read: [a, d], write: [a, d], move: L, next: q3 } # a < d: intercambiar
+    - { state: q1, read: [b, d], write: [b, d], move: L, next: q3 } # b < d: intercambiar
+    - { state: q1, read: [c, d], write: [c, d], move: L, next: q3 } # c < d: intercambiar
+    - { state: q1, read: [d, d], write: [d, d], move: R, next: q1 }
+    - { state: q1, read: [B, a], write: [B, B], move: L, next: q5 } # fin de pasada limpia: la cadena está ordenada
+    - { state: q1, read: [B, b], write: [B, B], move: L, next: q5 }
+    - { state: q1, read: [B, c], write: [B, B], move: L, next: q5 }
+    - { state: q1, read: [B, d], write: [B, B], move: L, next: q5 }
+
+    # ---- q2: pasada CON al menos un intercambio. Caché = símbolo anterior ----
+    - { state: q2, read: [a, a], write: [a, a], move: R, next: q2 }
+    - { state: q2, read: [b, a], write: [b, b], move: R, next: q2 }
+    - { state: q2, read: [c, a], write: [c, c], move: R, next: q2 }
+    - { state: q2, read: [d, a], write: [d, d], move: R, next: q2 }
+    - { state: q2, read: [a, b], write: [a, b], move: L, next: q3 } # a < b: intercambiar
+    - { state: q2, read: [b, b], write: [b, b], move: R, next: q2 }
+    - { state: q2, read: [c, b], write: [c, c], move: R, next: q2 }
+    - { state: q2, read: [d, b], write: [d, d], move: R, next: q2 }
+    - { state: q2, read: [a, c], write: [a, c], move: L, next: q3 } # a < c: intercambiar
+    - { state: q2, read: [b, c], write: [b, c], move: L, next: q3 } # b < c: intercambiar
+    - { state: q2, read: [c, c], write: [c, c], move: R, next: q2 }
+    - { state: q2, read: [d, c], write: [d, d], move: R, next: q2 }
+    - { state: q2, read: [a, d], write: [a, d], move: L, next: q3 } # a < d: intercambiar
+    - { state: q2, read: [b, d], write: [b, d], move: L, next: q3 } # b < d: intercambiar
+    - { state: q2, read: [c, d], write: [c, d], move: L, next: q3 } # c < d: intercambiar
+    - { state: q2, read: [d, d], write: [d, d], move: R, next: q2 }
+    - { state: q2, read: [B, a], write: [B, B], move: L, next: q4 } # fin de pasada con cambios: hay que repetir
+    - { state: q2, read: [B, b], write: [B, B], move: L, next: q4 }
+    - { state: q2, read: [B, c], write: [B, B], move: L, next: q4 }
+    - { state: q2, read: [B, d], write: [B, B], move: L, next: q4 }
+
+    # ---- q3: completar el intercambio (escribe el menor a la izquierda) ----
+    - { state: q3, read: [b, a], write: [b, a], move: R, next: q2 }
+    - { state: q3, read: [c, a], write: [c, a], move: R, next: q2 }
+    - { state: q3, read: [d, a], write: [d, a], move: R, next: q2 }
+    - { state: q3, read: [c, b], write: [c, b], move: R, next: q2 }
+    - { state: q3, read: [d, b], write: [d, b], move: R, next: q2 }
+    - { state: q3, read: [d, c], write: [d, c], move: R, next: q2 }
+
+    # ---- q4: regresar al inicio para otra pasada ----
+    - { state: q4, read: [a, B], write: [B, a], move: L, next: q4 }
+    - { state: q4, read: [b, B], write: [B, b], move: L, next: q4 }
+    - { state: q4, read: [c, B], write: [B, c], move: L, next: q4 }
+    - { state: q4, read: [d, B], write: [B, d], move: L, next: q4 }
+    - { state: q4, read: [B, B], write: [B, B], move: R, next: q0 }
+
+    # ---- q5: regresar al inicio y aceptar ----
+    - { state: q5, read: [a, B], write: [B, a], move: L, next: q5 }
+    - { state: q5, read: [b, B], write: [B, b], move: L, next: q5 }
+    - { state: q5, read: [c, B], write: [B, c], move: L, next: q5 }
+    - { state: q5, read: [d, B], write: [B, d], move: L, next: q5 }
+    - { state: q5, read: [B, B], write: [B, B], move: R, next: qf }
+
+  inputs:
+    - "dcbaa"
+    - "badcab"
+    - "ddccbbaa"
+    - "cabdacbd"
+    - "abcdd"       # ya ordenada: una sola pasada
