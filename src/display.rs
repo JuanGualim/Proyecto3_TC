@@ -288,12 +288,7 @@ pub fn summary(results: &[SimulationResult], style: &Style) -> String {
         } else {
             style.red(&format!("{:<11}", "RECHAZADA"))
         };
-        out += &format!(
-            "  {:<w_in$}  {label}  {:>6}  {}\n",
-            input,
-            r.steps(),
-            tape
-        );
+        out += &format!("  {:<w_in$}  {label}  {:>6}  {}\n", input, r.steps(), tape);
     }
     out
 }
