@@ -1,0 +1,22 @@
+# Ejemplo del laboratorio 9, problema 2: suma 1 a un número binario.
+# Sirve para comparar las IDs que genera el simulador con las del laboratorio.
+# Esta MT no usa la caché, por eso las transiciones usan el formato corto.
+
+mt:
+  name: "Laboratorio 9: incremento binario"
+  states: [q0, q1, qhalt]
+  input_alphabet: [0, 1]
+  tape_alphabet: [0, 1, B]
+  initial_state: q0
+  accept_states: [qhalt]
+  transitions:
+    - { state: q0, read: 0, write: 0, move: R, next: q0 }
+    - { state: q0, read: 1, write: 1, move: R, next: q0 }
+    - { state: q0, read: B, write: B, move: L, next: q1 }
+    - { state: q1, read: 0, write: 1, move: R, next: qhalt }
+    - { state: q1, read: 1, write: 0, move: L, next: q1 }
+    - { state: q1, read: B, write: B, move: L, next: qhalt }
+  inputs:
+    - "100"
+    - "10011"
+    - "11"
