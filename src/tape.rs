@@ -68,7 +68,11 @@ impl Tape {
         if cells.is_empty() {
             cells.push_back(blank.to_string());
         }
-        Tape { cells, head: 0, blank: blank.to_string() }
+        Tape {
+            cells,
+            head: 0,
+            blank: blank.to_string(),
+        }
     }
 
     /// Símbolo bajo la cabeza.
@@ -120,7 +124,10 @@ impl Tape {
     /// Contenido final de la cinta sin los blancos de los extremos.
     pub fn contents(&self) -> Vec<Symbol> {
         let not_blank = |s: &Symbol| *s != self.blank;
-        match (self.cells.iter().position(not_blank), self.cells.iter().rposition(not_blank)) {
+        match (
+            self.cells.iter().position(not_blank),
+            self.cells.iter().rposition(not_blank),
+        ) {
             (Some(first), Some(last)) => self.cells.range(first..=last).cloned().collect(),
             _ => Vec::new(),
         }
@@ -223,7 +230,10 @@ mod tests {
     fn tokeniza_por_simbolo_mas_largo_y_por_espacios() {
         let alfabeto: Vec<Symbol> = ["a", "b", "ab#"].iter().map(|s| s.to_string()).collect();
         assert_eq!(tokenize("aab#b", &alfabeto).unwrap(), vec!["a", "ab#", "b"]);
-        assert_eq!(tokenize("a ab# b", &alfabeto).unwrap(), vec!["a", "ab#", "b"]);
+        assert_eq!(
+            tokenize("a ab# b", &alfabeto).unwrap(),
+            vec!["a", "ab#", "b"]
+        );
         assert_eq!(tokenize("abc", &alfabeto), Err("c".to_string()));
         assert!(tokenize("", &alfabeto).unwrap().is_empty());
     }

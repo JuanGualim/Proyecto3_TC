@@ -83,7 +83,11 @@ pub struct ValidationError {
 
 impl fmt::Display for ValidationError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "la definición de la MT tiene {} problema(s):", self.problems.len())?;
+        writeln!(
+            f,
+            "la definición de la MT tiene {} problema(s):",
+            self.problems.len()
+        )?;
         for problem in &self.problems {
             writeln!(f, "  - {problem}")?;
         }
@@ -145,11 +149,15 @@ impl TuringMachine {
             }
         }
         if !state_set.contains(&initial_state) {
-            problems.push(format!("el estado inicial `{initial_state}` no está en `states`"));
+            problems.push(format!(
+                "el estado inicial `{initial_state}` no está en `states`"
+            ));
         }
         for state in &accept {
             if !state_set.contains(state) {
-                problems.push(format!("el estado de aceptación `{state}` no está en `states`"));
+                problems.push(format!(
+                    "el estado de aceptación `{state}` no está en `states`"
+                ));
             }
         }
         for symbol in &input_alphabet {
@@ -163,7 +171,9 @@ impl TuringMachine {
             problems.push(format!("el blanco `{blank}` debe estar en `tape_alphabet`"));
         }
         if input_alphabet.contains(&blank) {
-            problems.push(format!("el blanco `{blank}` no puede estar en `input_alphabet`"));
+            problems.push(format!(
+                "el blanco `{blank}` no puede estar en `input_alphabet`"
+            ));
         }
 
         // --- Transiciones ------------------------------------------------------
@@ -270,7 +280,10 @@ fn build_transition(raw: &RawTransition, blank: &str) -> Result<Transition, Stri
         SymbolPair::Pair(v) if v.len() == 2 => (v[0].0.trim(), v[1].0.trim()),
         SymbolPair::Single(s) => (s.0.trim(), blank),
         SymbolPair::Pair(v) => {
-            return Err(format!("`read` debe tener 2 elementos [símbolo, caché], tiene {}", v.len()));
+            return Err(format!(
+                "`read` debe tener 2 elementos [símbolo, caché], tiene {}",
+                v.len()
+            ));
         }
     };
     let (new_cache, write) = match &raw.write {
@@ -340,7 +353,8 @@ mod tests {
 
     #[test]
     fn detecta_no_determinismo() {
-        let yaml = format!("{BASE}    - {{state: q0, read: [a, B], write: [b, B], move: L, next: q0}}\n");
+        let yaml =
+            format!("{BASE}    - {{state: q0, read: [a, B], write: [b, B], move: L, next: q0}}\n");
         let err = build(&yaml).unwrap_err();
         assert!(err.problems[0].contains("determinista"), "{err}");
     }
@@ -364,6 +378,11 @@ mod tests {
         let yaml = BASE.replace("tape_alphabet: [a, b, B, X]", "tape_alphabet: [a, b, X]");
         assert!(build(&yaml).unwrap_err().to_string().contains("blanco `B`"));
         let yaml = BASE.replace("input_alphabet: [a, b]", "input_alphabet: [a, b, B]");
-        assert!(build(&yaml).unwrap_err().to_string().contains("no puede estar en `input_alphabet`"));
+        assert!(
+            build(&yaml)
+                .unwrap_err()
+                .to_string()
+                .contains("no puede estar en `input_alphabet`")
+        );
     }
 }

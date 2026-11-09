@@ -23,8 +23,8 @@
 //!     - "aabb"
 //! ```
 
-use serde::de::{self, Deserializer, Visitor};
 use serde::Deserialize;
+use serde::de::{self, Deserializer, Visitor};
 use std::fmt;
 use std::fs;
 use std::path::Path;
@@ -196,13 +196,19 @@ mt:
              initial_state: q0\n  accept_states: [q0]\n  transitions: []\n  inputs: [101, \"\"]\n",
         )
         .unwrap();
-        assert_eq!(raw.input_alphabet, vec![Scalar("0".into()), Scalar("1".into())]);
+        assert_eq!(
+            raw.input_alphabet,
+            vec![Scalar("0".into()), Scalar("1".into())]
+        );
         assert_eq!(raw.inputs[0], Scalar("101".into()));
         assert_eq!(raw.inputs[1], Scalar("".into()));
     }
 
     #[test]
     fn reporta_yaml_invalido() {
-        assert!(matches!(parse_str("mt: [esto no es"), Err(ConfigError::Yaml(_))));
+        assert!(matches!(
+            parse_str("mt: [esto no es"),
+            Err(ConfigError::Yaml(_))
+        ));
     }
 }
