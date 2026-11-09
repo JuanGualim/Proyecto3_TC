@@ -1,0 +1,64 @@
+# MT RECONOCEDORA (extra)
+#
+#   L = { w ∈ {a, b, c}*  |  w = w^R }   (palíndromos)
+#
+# Usa la CACHÉ para recordar el primer símbolo: lo borra, lo guarda en la caché,
+# viaja hasta el último símbolo y lo compara con la caché. Sin caché haría falta
+# un estado distinto por cada letra del alfabeto.
+#
+#   q0  Borra el primer símbolo y lo guarda en la caché (cadena vacía → acepta).
+#   q1  Avanza hasta el final de la cadena llevando el símbolo en la caché.
+#   q2  Compara el último símbolo con la caché: si coincide lo borra; si llega
+#       a un blanco es porque quedaba un solo símbolo central → acepta.
+#       Si no coincide no hay transición → rechaza.
+#   q3  Regresa al inicio y repite.
+#
+# Complejidad: O(n²) pasos.
+
+mt:
+  name: "MT reconocedora: palíndromos sobre {a, b, c}"
+  states: [q0, q1, q2, q3, qf]
+  input_alphabet: [a, b, c]
+  tape_alphabet: [a, b, c, B]
+  initial_state: q0
+  accept_states: [qf]
+  transitions:
+    # q0: tomar el primer símbolo
+    - { state: q0, read: [a, B], write: [a, B], move: R, next: q1 }
+    - { state: q0, read: [b, B], write: [b, B], move: R, next: q1 }
+    - { state: q0, read: [c, B], write: [c, B], move: R, next: q1 }
+    - { state: q0, read: [B, B], write: [B, B], move: S, next: qf }
+
+    # q1: ir al final con el símbolo en la caché
+    - { state: q1, read: [a, a], write: [a, a], move: R, next: q1 }
+    - { state: q1, read: [b, a], write: [a, b], move: R, next: q1 }
+    - { state: q1, read: [c, a], write: [a, c], move: R, next: q1 }
+    - { state: q1, read: [B, a], write: [a, B], move: L, next: q2 }
+    - { state: q1, read: [a, b], write: [b, a], move: R, next: q1 }
+    - { state: q1, read: [b, b], write: [b, b], move: R, next: q1 }
+    - { state: q1, read: [c, b], write: [b, c], move: R, next: q1 }
+    - { state: q1, read: [B, b], write: [b, B], move: L, next: q2 }
+    - { state: q1, read: [a, c], write: [c, a], move: R, next: q1 }
+    - { state: q1, read: [b, c], write: [c, b], move: R, next: q1 }
+    - { state: q1, read: [c, c], write: [c, c], move: R, next: q1 }
+    - { state: q1, read: [B, c], write: [c, B], move: L, next: q2 }
+
+    # q2: comparar el último símbolo con la caché
+    - { state: q2, read: [a, a], write: [B, B], move: L, next: q3 }
+    - { state: q2, read: [b, b], write: [B, B], move: L, next: q3 }
+    - { state: q2, read: [c, c], write: [B, B], move: L, next: q3 }
+    - { state: q2, read: [B, a], write: [B, B], move: S, next: qf }
+    - { state: q2, read: [B, b], write: [B, B], move: S, next: qf }
+    - { state: q2, read: [B, c], write: [B, B], move: S, next: qf }
+
+    # q3: regresar al inicio
+    - { state: q3, read: [a, B], write: [B, a], move: L, next: q3 }
+    - { state: q3, read: [b, B], write: [B, b], move: L, next: q3 }
+    - { state: q3, read: [c, B], write: [B, c], move: L, next: q3 }
+    - { state: q3, read: [B, B], write: [B, B], move: R, next: q0 }
+
+  inputs:
+    - "abcba"
+    - "abccba"
+    - "abcab"
+    - "aabbcaa"

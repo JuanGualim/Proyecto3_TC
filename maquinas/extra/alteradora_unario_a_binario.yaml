@@ -1,0 +1,71 @@
+# MT ALTERADORA (extra)
+#
+#   Convierte un número escrito en UNARIO (n veces el símbolo a) a BINARIO.
+#
+#   Ejemplos:  aaaaa (5) → 101      aaaaaaaaaaaaa (13) → 1101
+#
+# Algoritmo (un contador binario que crece hacia la izquierda de la entrada):
+#   q0-q2  Escribe "0#" a la izquierda de la entrada: 0 es el contador, # separa.
+#   q3     Busca la siguiente a sin tachar (salta # y X).
+#          Si ya no hay → limpieza (q6).
+#   q3→q4  Tacha la a con X y regresa hasta el separador #.
+#   q5     Suma 1 al contador binario (bit menos significativo junto a #):
+#            1 → 0 y acarrea a la izquierda;  0 o B → 1 y termina el acarreo.
+#   q7     Regresa al separador y vuelve a q3.
+#   q6     Borra las X y el # (de derecha a izquierda).
+#   q8     Lleva la cabeza al inicio del número binario y acepta.
+#
+# Complejidad: O(n²) pasos (n vueltas entre la entrada y el contador).
+# Esta MT no usa la caché, por eso las transiciones usan el formato corto.
+
+mt:
+  name: "MT alteradora: conversión de unario a binario"
+  description: |
+    Reemplaza a^n por la representación binaria de n.
+    La cadena vacía (n = 0) se convierte en 0.
+  states: [q0, q1, q2, q3, q4, q5, q6, q7, q8, qf]
+  input_alphabet: [a]
+  tape_alphabet: [a, "0", "1", "#", X, B]
+  initial_state: q0
+  accept_states: [qf]
+  transitions:
+    # ---- Preparar el contador "0#" -------------------------------------------
+    - { state: q0, read: a, write: a, move: L, next: q1 }
+    - { state: q0, read: B, write: "0", move: S, next: qf } # n = 0
+    - { state: q1, read: B, write: "#", move: L, next: q2 }
+    - { state: q2, read: B, write: "0", move: R, next: q3 }
+
+    # ---- Buscar la siguiente a ---------------------------------------------
+    - { state: q3, read: "#", write: "#", move: R, next: q3 }
+    - { state: q3, read: X, write: X, move: R, next: q3 }
+    - { state: q3, read: a, write: X, move: L, next: q4 }
+    - { state: q3, read: B, write: B, move: L, next: q6 }
+
+    # ---- Volver al contador -------------------------------------------------
+    - { state: q4, read: X, write: X, move: L, next: q4 }
+    - { state: q4, read: "#", write: "#", move: L, next: q5 }
+
+    # ---- Sumar 1 en binario --------------------------------------------------
+    - { state: q5, read: "1", write: "0", move: L, next: q5 }
+    - { state: q5, read: "0", write: "1", move: R, next: q7 }
+    - { state: q5, read: B, write: "1", move: R, next: q7 }
+
+    # ---- Regresar al separador -----------------------------------------------
+    - { state: q7, read: "0", write: "0", move: R, next: q7 }
+    - { state: q7, read: "1", write: "1", move: R, next: q7 }
+    - { state: q7, read: "#", write: "#", move: R, next: q3 }
+
+    # ---- Limpiar X y # -------------------------------------------------------
+    - { state: q6, read: X, write: B, move: L, next: q6 }
+    - { state: q6, read: "#", write: B, move: L, next: q8 }
+
+    # ---- Regresar al inicio del número y aceptar ----------------------------
+    - { state: q8, read: "0", write: "0", move: L, next: q8 }
+    - { state: q8, read: "1", write: "1", move: L, next: q8 }
+    - { state: q8, read: B, write: B, move: R, next: qf }
+
+  inputs:
+    - "aaaaa"            # 5  → 101
+    - "aaaaaaaa"         # 8  → 1000
+    - "aaaaaaaaaaaaa"    # 13 → 1101
+    - "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" # 42 → 101010

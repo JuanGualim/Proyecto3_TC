@@ -8,6 +8,7 @@ use turing_sim::machine::TuringMachine;
 use turing_sim::simulator::{Halt, run};
 
 fn load(file: &str) -> TuringMachine {
+    // `file` puede incluir subcarpetas, p. ej. "extra/...".
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("maquinas")
         .join(file);
@@ -90,4 +91,23 @@ fn ordenamiento_coincide_con_sort() {
 fn ordenamiento_rechaza_simbolos_fuera_del_alfabeto() {
     let m = load("alteradora_ordenamiento.yaml");
     assert_eq!(run(&m, "abxcd", 1000).halt, Halt::InvalidInput("x".into()));
+}
+
+#[test]
+fn unario_a_binario_coincide_con_format() {
+    let m = load("extra/alteradora_unario_a_binario.yaml");
+    for n in 0..=64 {
+        let r = run(&m, &"a".repeat(n), 100_000);
+        assert!(r.accepted(), "n = {n}");
+        assert_eq!(r.final_tape_text(), format!("{n:b}"), "n = {n}");
+    }
+}
+
+#[test]
+fn palindromos_coincide_con_reverse() {
+    let m = load("extra/reconocedora_palindromos.yaml");
+    for w in all_strings(&['a', 'b', 'c'], 7) {
+        let es_palindromo = w.chars().eq(w.chars().rev());
+        assert_eq!(run(&m, &w, 100_000).accepted(), es_palindromo, "cadena {w}");
+    }
 }
