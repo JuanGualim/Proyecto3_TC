@@ -8,7 +8,7 @@ Curso: Teoría de la Computación
 | Denil Parada | [@dparada2020225](https://github.com/dparada2020225) |
 | Harry Méndez | [@hmndz3](https://github.com/hmndz3) |
 
-**Video:** _pendiente (enlace de YouTube no listado)_
+**Video:** https://youtu.be/d6ZB2o4p4pA 
 
 Simulador de Máquinas de Turing (MT) de **una cinta**, escrito en **Rust**. El programa:
 
